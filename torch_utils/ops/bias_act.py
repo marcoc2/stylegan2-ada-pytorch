@@ -39,16 +39,18 @@ _plugin = None
 _null_tensor = torch.empty([0])
 
 def _init():
-    global _inited, _plugin
-    if not _inited:
-        _inited = True
-        sources = ['bias_act.cpp', 'bias_act.cu']
-        sources = [os.path.join(os.path.dirname(__file__), s) for s in sources]
+    global _plugin
+    if _plugin is None:
         try:
-            _plugin = custom_ops.get_plugin('bias_act_plugin', sources=sources, extra_cuda_cflags=['--use_fast_math'])
-        except:
-            warnings.warn('Failed to build CUDA kernels for bias_act. Falling back to slow reference implementation. Details:\n\n' + traceback.format_exc())
-    return _plugin is not None
+            _dir = os.path.dirname(__file__)
+            _plugin = custom_ops.get_plugin(
+                module_name='bias_act_plugin',
+                sources=[os.path.join(_dir, 'bias_act.cpp'), os.path.join(_dir, 'bias_act.cu')],
+                extra_cuda_cflags=['--use_fast_math'],
+            )
+        except Exception:
+            _plugin = False
+    return bool(_plugin)
 
 #----------------------------------------------------------------------------
 
